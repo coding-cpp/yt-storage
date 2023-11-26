@@ -4,9 +4,9 @@ yt::Parser::Parser() { return; }
 
 yt::Parser::~Parser() { return; }
 
-void yt::Parser::addFlag(const std::string &flag, const std::string &key,
-                         const std::string &description,
-                         const std::string &defaultValue) {
+void yt::Parser::add(const std::string &flag, const std::string &key,
+                     const std::string &description,
+                     const std::string &defaultValue) {
   this->flags[flag] = std::make_pair(key, description);
   if (defaultValue != "") {
     this->values[key] = defaultValue;

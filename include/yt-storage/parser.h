@@ -19,9 +19,9 @@ public:
   Parser();
   ~Parser();
 
-  void addFlag(const std::string &flag, const std::string &key,
-               const std::string &description = "",
-               const std::string &defaultValue = "");
+  void add(const std::string &flag, const std::string &key,
+           const std::string &description = "",
+           const std::string &defaultValue = "");
   void parse(int argc, char **argv);
   std::string get(const std::string &key);
 };
