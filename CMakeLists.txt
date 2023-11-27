@@ -18,7 +18,8 @@ option(USE_INSTALL_RESOURCE_PATH "Set resource path to install location" OFF)
 add_executable(${PROJECT_NAME}
   ./src/print.cpp
   ./src/parser.cpp
-  ./src/main.cpp
+
+  ./example/main.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
