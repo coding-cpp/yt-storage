@@ -19,7 +19,7 @@ add_executable(${PROJECT_NAME}
   ./src/print.cpp
   ./src/parser.cpp
 
-  ./example/main.cpp
+  ./example/example.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
