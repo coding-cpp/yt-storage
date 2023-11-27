@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include <yt-storage/encrypter.h>
 #include <yt-storage/parser.h>
 
 int main(int argc, char **argv) {

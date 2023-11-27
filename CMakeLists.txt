@@ -15,15 +15,21 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(USE_INSTALL_RESOURCE_PATH "Set resource path to install location" OFF)
 
-add_executable(${PROJECT_NAME}
+find_package(OpenSSL REQUIRED)
+
+add_executable(encrypt
   ./src/print.cpp
   ./src/parser.cpp
+  ./src/encrypter.cpp
 
-  ./example/example.cpp
+  ./example/encrypt.cpp
 )
-
-target_include_directories(${PROJECT_NAME}
+target_include_directories(encrypt
   PUBLIC
     $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+target_link_libraries(encrypt
+  PRIVATE
+    ${OPENSSL_LIBRARIES}
 )
