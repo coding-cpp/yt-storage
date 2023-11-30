@@ -16,6 +16,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(USE_INSTALL_RESOURCE_PATH "Set resource path to install location" OFF)
 
 find_package(OpenSSL REQUIRED)
+find_package(OpenCV REQUIRED)
 
 add_executable(encrypt
   ./src/print.cpp
@@ -32,4 +33,23 @@ target_include_directories(encrypt
 target_link_libraries(encrypt
   PRIVATE
     ${OPENSSL_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+)
+
+add_executable(decrypt
+  ./src/print.cpp
+  ./src/parser.cpp
+  ./src/decrypter.cpp
+
+  ./example/decrypt.cpp
+)
+target_include_directories(decrypt
+  PUBLIC
+    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+target_link_libraries(decrypt
+  PRIVATE
+    ${OPENSSL_LIBRARIES}
+    ${OpenCV_LIBRARIES}
 )
