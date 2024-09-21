@@ -1,13 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
-project(yt-storage VERSION 0.1.0)
+project(expresso VERSION 0.1.5)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-set(CMAKE_CXX_COMPILER "g++")
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Debug 
+  set(CMAKE_BUILD_TYPE Release 
     CACHE STRING 
       "Choose the type of build (Debug or Release)" FORCE)
 endif()
@@ -15,20 +14,26 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(USE_INSTALL_RESOURCE_PATH "Set resource path to install location" OFF)
 
+set(BUILD_SHARED_LIBS OFF)
+
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+file(GLOB_RECURSE LIB_SOURCES "lib/**/src/*.cpp")
+
 find_package(OpenSSL REQUIRED)
 find_package(OpenCV REQUIRED)
 
 add_executable(encrypt
-  ./src/print.cpp
-  ./src/parser.cpp
-  ./src/encrypter.cpp
-
   ./example/encrypt.cpp
+
+  ${SOURCES}
+  ${LIB_SOURCES}
 )
 target_include_directories(encrypt
   PUBLIC
     $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:lib/logger/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/logger/include>
 )
 target_link_libraries(encrypt
   PRIVATE
@@ -37,16 +42,17 @@ target_link_libraries(encrypt
 )
 
 add_executable(decrypt
-  ./src/print.cpp
-  ./src/parser.cpp
-  ./src/decrypter.cpp
-
   ./example/decrypt.cpp
+
+  ${SOURCES}
+  ${LIB_SOURCES}
 )
 target_include_directories(decrypt
   PUBLIC
     $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:lib/logger/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/logger/include>
 )
 target_link_libraries(decrypt
   PRIVATE
