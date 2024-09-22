@@ -37,8 +37,8 @@ void yt::Parser::validate() {
   for (std::pair<const std::string, std::pair<std::string, std::string>>
            element : this->flags) {
     if (this->values.find(element.second.first) == this->values.end()) {
-      print::warning("Missing argument: " + element.first);
-      print::info(element.second.second + ": ", false);
+      logger::warning("Missing argument: " + element.first + " - " +
+                      element.second.second + ": ");
 
       std::string value;
       std::cin >> value;

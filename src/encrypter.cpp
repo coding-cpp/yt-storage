@@ -3,8 +3,9 @@
 yt::Encrypter::Encrypter(const std::string &inputFilePath, int width) {
   this->inputFile.open(inputFilePath, std::ios::binary);
   if (!this->inputFile.is_open()) {
-    print::error(inputFilePath);
-    throw std::runtime_error("Failed to open input file!");
+    logger::error("Failed to open input file: " + inputFilePath,
+                  "yt::Encrypter::Encrypter(const std::string &inputFilePath, "
+                  "int width)");
   }
 
   this->resolution = cv::Size(width, width * 9 / 16);
@@ -22,12 +23,12 @@ yt::Encrypter::~Encrypter() {
 }
 
 void yt::Encrypter::dump(const std::string &outputFilePath) {
-  this->video = cv::VideoWriter(outputFilePath,
-                                cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 30,
-                                this->resolution, false);
+  this->video =
+      cv::VideoWriter(outputFilePath, -1, 30, this->resolution, false);
   if (!this->video.isOpened()) {
-    print::error(outputFilePath);
-    throw std::runtime_error("Failed to open output file!");
+    logger::error(
+        "Failed to open output file: " + outputFilePath,
+        "void yt::Encrypter::dump(const std::string &outputFilePath)");
   }
 
   char byte;

@@ -3,8 +3,8 @@
 yt::Decrypter::Decrypter(const std::string &inputFilePath) {
   this->cap = cv::VideoCapture(inputFilePath);
   if (!this->cap.isOpened()) {
-    print::error(inputFilePath);
-    throw std::runtime_error("Failed to open input file!");
+    logger::error("Failed to open input file: " + inputFilePath,
+                  "yt::Decrypter::Decrypter(const std::string &inputFilePath)");
   }
 
   this->extractInfo();
@@ -21,8 +21,9 @@ void yt::Decrypter::dump(const std::string &outputFilePath) {
   std::ofstream outputFile;
   outputFile.open(outputFilePath, std::ios::binary);
   if (!outputFile.is_open()) {
-    print::error(outputFilePath);
-    throw std::runtime_error("Failed to open output file!");
+    logger::error(
+        "Failed to open output file: " + outputFilePath,
+        "void yt::Decrypter::dump(const std::string &outputFilePath)");
   }
 
   char byte;
@@ -72,8 +73,8 @@ void yt::Decrypter::extractInfo() {
   this->cap.set(cv::CAP_PROP_POS_FRAMES, totalFrames - 1);
   this->cap.read(this->frame);
   if (this->frame.empty()) {
-    print::error("Can't read empty frame!");
-    throw std::runtime_error("Input frame not read!");
+    logger::error("Can't read empty frame!",
+                  "void yt::Decrypter::extractInfo()");
   }
 
   this->resolution = this->frame.size();
