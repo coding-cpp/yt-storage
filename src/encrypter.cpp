@@ -1,81 +1,108 @@
 #include <yt-storage/encrypter.h>
 
-yt::Encrypter::Encrypter(const std::string &inputFilePath, int width) {
-  this->inputFile.open(inputFilePath, std::ios::binary);
-  if (!this->inputFile.is_open()) {
-    logger::error("Failed to open input file: " + inputFilePath,
-                  "yt::Encrypter::Encrypter(const std::string &inputFilePath, "
-                  "int width)");
-  }
-
-  this->resolution = cv::Size(width, width * 9 / 16);
-  this->frame = cv::Mat::zeros(this->resolution, CV_8UC1);
-
-  return;
-}
+yt::Encrypter::Encrypter() : col(0), row(0) { return; }
 
 yt::Encrypter::~Encrypter() {
-  this->video.release();
-  if (this->inputFile.is_open())
-    this->inputFile.close();
+  if (this->writer.isOpened()) {
+    this->writer.release();
+  }
+  return;
+}
+
+void yt::Encrypter::encrypt(yt::options options) {
+  this->options = options;
+  if (!brewtils::os::file::exists(this->options.inputFile)) {
+    logger::error("Input file " + this->options.inputFile + " does not exist",
+                  "void yt::Encrypter::encrypt(yt::options options)");
+  }
+
+  this->writer.open(this->options.outputFile,
+                    cv::VideoWriter::fourcc('m', 'p', '4', 'v'),
+                    this->options.fps,
+                    cv::Size(this->options.width, this->options.height), false);
+  if (!this->writer.isOpened()) {
+    logger::error("Could not open video writer",
+                  "void yt::Encrypter::encrypt(yt::options options)");
+  }
+
+  this->setMetadata();
+  this->setFiledata();
+
+  if (this->row != 0 || this->col != 0) {
+    this->writer.write(this->frame);
+  }
 
   return;
 }
 
-void yt::Encrypter::dump(const std::string &outputFilePath) {
-  this->video =
-      cv::VideoWriter(outputFilePath, -1, 30, this->resolution, false);
-  if (!this->video.isOpened()) {
-    logger::error(
-        "Failed to open output file: " + outputFilePath,
-        "void yt::Encrypter::dump(const std::string &outputFilePath)");
+std::vector<bool> yt::Encrypter::getJsonData() {
+  std::vector<bool> response;
+  json::object data;
+  data["name"] = brewtils::os::basePath(this->options.inputFile);
+  data["size"] =
+      (long long int)(brewtils::os::file::size(this->options.inputFile) * 8);
+  const std::string strigifiedData = data.dumps();
+  int asciiValue, i;
+  for (char ch : strigifiedData) {
+    asciiValue = static_cast<int>(ch);
+    for (i = 7; i >= 0; --i) {
+      response.push_back((asciiValue >> i) & 1);
+    }
+  }
+  return response;
+}
+
+void yt::Encrypter::setMetadata() {
+  const std::vector<bool> jsonData = yt::Encrypter::getJsonData();
+  uint16_t jsonDataSize = jsonData.size();
+
+  for (int i = 0; i < 16; i++) {
+    this->setData(jsonDataSize % 2 != 0);
+    jsonDataSize /= 2;
+  }
+
+  for (const bool &bit : jsonData) {
+    this->setData(bit);
+  }
+
+  return;
+}
+
+void yt::Encrypter::setFiledata() {
+  std::ifstream file(this->options.inputFile, std::ios::binary);
+  if (!file.is_open()) {
+    logger::error("Could not open file " + this->options.inputFile,
+                  "void yt::Encrypter::setFiledata()");
   }
 
   char byte;
-  short currRow = 0, currCol = 0;
-  while (inputFile.read(&byte, sizeof(byte))) {
-    std::bitset<8> bits(byte);
-    if (currCol + currRow * this->resolution.width + 8 >
-        this->resolution.area()) {
-      this->video.write(this->frame);
-      this->frame = cv::Mat::zeros(this->resolution, CV_8UC1);
-      currCol = 0;
-      currRow = 0;
-    }
-    for (int i = 0; i < 8; i++) {
-      this->frame.at<uchar>(currRow, currCol) = 255 * bits[i];
-      if (currCol == this->resolution.width - 1) {
-        currCol = 0;
-        currRow += 1;
-      } else {
-        currCol += 1;
-      }
+  while (file.get(byte)) {
+    for (int i = 7; i >= 0; --i) {
+      this->setData((byte >> i) & 1);
     }
   }
-  if (!this->frame.empty()) {
-    this->video.write(this->frame);
-  }
 
-  int lastFrameUsedBits = currCol + currRow * this->resolution.width;
-  this->appendLastFrame(lastFrameUsedBits);
-
+  file.close();
   return;
 }
 
-void yt::Encrypter::appendLastFrame(int lastFrameUsedBits) {
-  this->frame = cv::Mat::zeros(this->resolution, CV_8UC1);
-  short currRow = 0, currCol = 0;
-  for (int i = 31; i >= 0; i--) {
-    int bit = (lastFrameUsedBits >> i) & 1;
-    this->frame.at<uchar>(currRow, currCol) = 255 * bit;
-    if (currCol == this->resolution.width - 1) {
-      currCol = 0;
-      currRow += 1;
-    } else {
-      currCol += 1;
-    }
+void yt::Encrypter::setData(bool data) {
+  if (this->row == 0 && this->col == 0) {
+    this->frame = cv::Mat::zeros(
+        cv::Size(this->options.width, this->options.height), CV_8UC1);
   }
 
-  this->video.write(this->frame);
+  this->frame.at<uchar>(this->row, this->col) = data ? 255 : 0;
+  this->col++;
+  if (this->col == this->options.width) {
+    this->col = 0;
+    this->row++;
+  }
+
+  if (this->row == this->options.height) {
+    this->writer.write(this->frame);
+    this->row = 0;
+  }
+
   return;
 }

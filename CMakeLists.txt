@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(expresso VERSION 0.1.5)
+project(yt-storage VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -19,43 +19,26 @@ set(BUILD_SHARED_LIBS OFF)
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE LIB_SOURCES "lib/**/src/*.cpp")
 
-find_package(OpenSSL REQUIRED)
 find_package(OpenCV REQUIRED)
 
-add_executable(encrypt
-  ./example/encrypt.cpp
+add_executable(${PROJECT_NAME}
+  ./example/main.cpp
 
   ${SOURCES}
   ${LIB_SOURCES}
 )
-target_include_directories(encrypt
+target_include_directories(${PROJECT_NAME}
   PUBLIC
     $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:lib/logger/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/logger/include>
+    $<INSTALL_INTERFACE:lib/brewtils/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/brewtils/include>
+    $<INSTALL_INTERFACE:lib/json/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/json/include>
 )
-target_link_libraries(encrypt
+target_link_libraries(${PROJECT_NAME}
   PRIVATE
-    ${OPENSSL_LIBRARIES}
-    ${OpenCV_LIBRARIES}
-)
-
-add_executable(decrypt
-  ./example/decrypt.cpp
-
-  ${SOURCES}
-  ${LIB_SOURCES}
-)
-target_include_directories(decrypt
-  PUBLIC
-    $<INSTALL_INTERFACE:include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:lib/logger/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/logger/include>
-)
-target_link_libraries(decrypt
-  PRIVATE
-    ${OPENSSL_LIBRARIES}
     ${OpenCV_LIBRARIES}
 )

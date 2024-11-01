@@ -1,102 +1,120 @@
 #include <yt-storage/decrypter.h>
 
-yt::Decrypter::Decrypter(const std::string &inputFilePath) {
-  this->cap = cv::VideoCapture(inputFilePath);
-  if (!this->cap.isOpened()) {
-    logger::error("Failed to open input file: " + inputFilePath,
-                  "yt::Decrypter::Decrypter(const std::string &inputFilePath)");
-  }
-
-  this->extractInfo();
-  return;
-}
+yt::Decrypter::Decrypter() : col(0), row(0) { return; }
 
 yt::Decrypter::~Decrypter() {
-  this->cap.release();
-
+  if (this->cap.isOpened()) {
+    this->cap.release();
+  }
   return;
 }
 
-void yt::Decrypter::dump(const std::string &outputFilePath) {
-  std::ofstream outputFile;
-  outputFile.open(outputFilePath, std::ios::binary);
-  if (!outputFile.is_open()) {
-    logger::error(
-        "Failed to open output file: " + outputFilePath,
-        "void yt::Decrypter::dump(const std::string &outputFilePath)");
+void yt::Decrypter::decrypt(yt::options options) {
+  this->options = options;
+  this->options.width = -1;
+  this->options.height = -1;
+  if (!brewtils::os::file::exists(this->options.inputFile)) {
+    logger::error("Input file " + this->options.inputFile + " does not exist",
+                  "void yt::Decrypter::decrypt(yt::options options)");
   }
 
-  char byte;
-  char pixel;
-  bool bit;
-  short currRow, currCol;
-  std::bitset<8> bits;
-  this->totalFrames -= 1;
-  while (this->totalFrames--) {
-    currRow = 0;
-    currCol = 0;
-    cap.read(this->frame);
-    cv::cvtColor(this->frame, this->grayscale, cv::COLOR_BGR2GRAY);
-
-    while (currCol + currRow * this->resolution.width + 8 <
-           this->resolution.area()) {
-      if ((this->totalFrames == 0) &&
-          (currCol + currRow * this->resolution.width >=
-           this->lastFrameUsedBits)) {
-        break;
-      }
-      for (int i = 0; i < 8; i++) {
-        pixel = this->grayscale.at<uchar>(currRow, currCol);
-        bit = pixel < 0 ? 1 : 0;
-        bits[i] = bit;
-
-        if (currCol == this->resolution.width - 1) {
-          currCol = 0;
-          currRow += 1;
-        } else {
-          currCol += 1;
-        }
-      }
-
-      byte = static_cast<char>(bits.to_ulong());
-      outputFile.put(byte);
-    }
+  this->cap.open(this->options.inputFile);
+  if (!this->cap.isOpened()) {
+    logger::error("Could not open file " + this->options.inputFile,
+                  "void yt::Decrypter::decrypt(yt::options options)");
   }
 
-  outputFile.close();
+  this->readMetadata();
+  this->readFiledata();
   return;
 }
 
-void yt::Decrypter::extractInfo() {
-  this->totalFrames = static_cast<int>(this->cap.get(cv::CAP_PROP_FRAME_COUNT));
-
-  this->cap.set(cv::CAP_PROP_POS_FRAMES, totalFrames - 1);
-  this->cap.read(this->frame);
-  if (this->frame.empty()) {
-    logger::error("Can't read empty frame!",
-                  "void yt::Decrypter::extractInfo()");
-  }
-
-  this->resolution = this->frame.size();
-  cv::cvtColor(this->frame, this->grayscale, cv::COLOR_BGR2GRAY);
-
-  short currRow = 0, currCol = 0;
-  this->lastFrameUsedBits = 0;
-  char pixel;
-  short bit;
-  for (int i = 31; i >= 0; i--) {
-    pixel = this->grayscale.at<uchar>(currRow, currCol);
-    bit = pixel < 0 ? 1 : 0;
-    this->lastFrameUsedBits += bit * std::pow(2, i);
-
-    if (currCol == this->resolution.width - 1) {
-      currCol = 0;
-      currRow += 1;
-    } else {
-      currCol += 1;
+bool yt::Decrypter::getData() {
+  if (this->row == 0 && this->col == 0) {
+    bool isFrameRead = this->cap.read(this->frame);
+    if (!isFrameRead) {
+      logger::error("Could not read frame", "bool yt::Decrypter::getData()");
+    }
+    if (this->options.width == -1 || this->options.height == -1) {
+      this->options.width = this->frame.size().width;
+      this->options.height = this->frame.size().height;
     }
   }
 
-  this->cap.set(cv::CAP_PROP_POS_FRAMES, 0);
+  bool data = this->frame.at<cv::Vec3b>(this->row, this->col)[0] > 128;
+  this->col++;
+  if (this->col == this->options.width) {
+    this->col = 0;
+    row++;
+  }
+
+  if (this->row == this->options.height) {
+    this->row = 0;
+  }
+
+  return data;
+}
+
+void yt::Decrypter::readMetadata() {
+  uint16_t jsonDataSize = 0;
+  this->row = 0;
+  this->col = 0;
+  for (int i = 0; i < 16; i++) {
+    jsonDataSize += this->getData() ? std::pow(2, i) : 0;
+  }
+
+  if (jsonDataSize % 8 != 0) {
+    logger::error("Invalid metadata size",
+                  "void yt::Decrypter::readMetadata()");
+  }
+
+  std::vector<bool> jsonData = std::vector<bool>(jsonDataSize);
+  for (int i = 0; i < jsonDataSize; i++) {
+    jsonData[i] = this->getData();
+  }
+
+  std::string strigifiedJson = "";
+  for (int i = 0; i < jsonData.size(); i += 8) {
+    int asciiValue = 0;
+    for (size_t j = 0; j < 8 && (i + j) < jsonData.size(); ++j) {
+      asciiValue = (asciiValue << 1) | static_cast<int>(jsonData[i + j]);
+    }
+    strigifiedJson += static_cast<char>(asciiValue);
+  }
+
+  try {
+    json::parser parser;
+    json::object data = parser.loads(strigifiedJson);
+    this->options.outputFile =
+        "../files/" + static_cast<std::string>(data["name"]);
+    this->fileSize = data["size"];
+  } catch (const std::exception &e) {
+    logger::error("Invalid metadata detected",
+                  "void yt::Decrypter::readMetadata()");
+  }
+
+  if (fileSize % 8 != 0) {
+    logger::error("Invalid file size", "void yt::Decrypter::readMetadata()");
+  }
+  return;
+}
+
+void yt::Decrypter::readFiledata() {
+  std::ofstream file(this->options.outputFile, std::ios::binary);
+  if (!file.is_open()) {
+    logger::error("Could not open file " + this->options.outputFile,
+                  "void yt::Decrypter::readFiledata()");
+  }
+
+  char byte = 0;
+  for (long long int i = 0; i < this->fileSize; i++) {
+    byte = (byte << 1) | this->getData();
+    if ((i + 1) % 8 == 0) {
+      file.put(byte);
+      byte = 0;
+    }
+  }
+
+  file.close();
   return;
 }

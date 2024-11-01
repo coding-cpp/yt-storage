@@ -1,30 +1,27 @@
 #pragma once
 
-#include <bitset>
-#include <fstream>
-#include <string>
-
-#include <opencv2/opencv.hpp>
-
-#include <logger/log.h>
+#include <yt-storage/options.h>
 
 namespace yt {
 
 class Encrypter {
 private:
-  std::ifstream inputFile;
-
-  cv::Size resolution;
+  int row, col;
   cv::Mat frame;
-  cv::VideoWriter video;
+  cv::VideoWriter writer;
 
-  void appendLastFrame(int lastFrameUsedBits);
+  yt::options options;
+
+  std::vector<bool> getJsonData();
+  void setMetadata();
+  void setFiledata();
+  void setData(bool data);
 
 public:
-  Encrypter(const std::string &inputFilePath, int width);
+  Encrypter();
   ~Encrypter();
 
-  void dump(const std::string &outputFilePath);
+  void encrypt(yt::options options);
 };
 
 } // namespace yt

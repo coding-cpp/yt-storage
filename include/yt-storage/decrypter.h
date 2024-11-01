@@ -1,32 +1,28 @@
 #pragma once
 
-#include <bitset>
-#include <fstream>
-#include <string>
-
-#include <opencv2/opencv.hpp>
-
-#include <logger/log.h>
+#include <yt-storage/options.h>
 
 namespace yt {
 
 class Decrypter {
 private:
-  int totalFrames;
-  unsigned int lastFrameUsedBits;
+  int row, col;
+  long long int fileSize;
 
-  cv::Size resolution;
   cv::Mat frame;
-  cv::Mat grayscale;
   cv::VideoCapture cap;
 
-  void extractInfo();
+  yt::options options;
+
+  bool getData();
+  void readMetadata();
+  void readFiledata();
 
 public:
-  Decrypter(const std::string &inputFilePath);
+  Decrypter();
   ~Decrypter();
 
-  void dump(const std::string &outputFilePath);
+  void decrypt(yt::options options);
 };
 
 } // namespace yt
