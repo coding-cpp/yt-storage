@@ -41,6 +41,7 @@ std::vector<bool> yt::Encrypter::getJsonData() {
   data["name"] = brewtils::os::basePath(this->options.inputFile);
   data["size"] =
       (long long int)(brewtils::os::file::size(this->options.inputFile) * 8);
+  data["version"] = yt::version;
   const std::string strigifiedData = data.dumps();
   int asciiValue, i;
   for (char ch : strigifiedData) {

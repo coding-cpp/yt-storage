@@ -6,6 +6,8 @@
 #include <brewtils/os.h>
 #include <json/parse.h>
 
+#include <yt-storage/version.h>
+
 namespace yt {
 
 typedef struct {

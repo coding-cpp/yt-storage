@@ -85,6 +85,13 @@ void yt::Decrypter::readMetadata() {
   try {
     json::parser parser;
     json::object data = parser.loads(strigifiedJson);
+    const std::string version = data["version"];
+    if (version != yt::version) {
+      logger::error("Invalid version detected. Expected: " + yt::version +
+                        ", Found: " + version,
+                    "void yt::Decrypter::readMetadata()");
+    }
+
     this->options.outputFile =
         "../files/" + static_cast<std::string>(data["name"]);
     this->fileSize = data["size"];
