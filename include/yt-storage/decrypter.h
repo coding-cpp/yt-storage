@@ -7,6 +7,7 @@ namespace yt {
 class Decrypter {
 private:
   int row, col;
+  int data;
   long long int fileSize;
 
   cv::Mat frame;

@@ -1,6 +1,6 @@
 #include <yt-storage/decrypter.h>
 
-yt::Decrypter::Decrypter() : col(0), row(0) { return; }
+yt::Decrypter::Decrypter() : col(0), row(0), data(false) { return; }
 
 yt::Decrypter::~Decrypter() {
   if (this->cap.isOpened()) {
@@ -30,29 +30,33 @@ void yt::Decrypter::decrypt(yt::options options) {
 }
 
 bool yt::Decrypter::getData() {
-  if (this->row == 0 && this->col == 0) {
-    bool isFrameRead = this->cap.read(this->frame);
-    if (!isFrameRead) {
-      logger::error("Could not read frame", "bool yt::Decrypter::getData()");
+  this->data = 0;
+  for (int i = 0; i < yt::REDUNDANCY; i++) {
+    if (this->row == 0 && this->col == 0) {
+      bool isFrameRead = this->cap.read(this->frame);
+      if (!isFrameRead) {
+        logger::error("Could not read frame", "bool yt::Decrypter::getData()");
+      }
+      if (this->options.width == -1 || this->options.height == -1) {
+        this->options.width = this->frame.size().width;
+        this->options.height = this->frame.size().height;
+      }
     }
-    if (this->options.width == -1 || this->options.height == -1) {
-      this->options.width = this->frame.size().width;
-      this->options.height = this->frame.size().height;
+
+    this->data +=
+        this->frame.at<cv::Vec3b>(this->row, this->col)[0] > 128 ? 1 : 0;
+    this->col++;
+    if (this->col == this->options.width) {
+      this->col = 0;
+      row++;
+    }
+
+    if (this->row == this->options.height) {
+      this->row = 0;
     }
   }
 
-  bool data = this->frame.at<cv::Vec3b>(this->row, this->col)[0] > 128;
-  this->col++;
-  if (this->col == this->options.width) {
-    this->col = 0;
-    row++;
-  }
-
-  if (this->row == this->options.height) {
-    this->row = 0;
-  }
-
-  return data;
+  return data > yt::REDUNDANCY / 2;
 }
 
 void yt::Decrypter::readMetadata() {
@@ -73,18 +77,18 @@ void yt::Decrypter::readMetadata() {
     jsonData[i] = this->getData();
   }
 
-  std::string strigifiedJson = "";
+  std::string stringifiedJson = "";
   for (int i = 0; i < jsonData.size(); i += 8) {
     int asciiValue = 0;
     for (size_t j = 0; j < 8 && (i + j) < jsonData.size(); ++j) {
       asciiValue = (asciiValue << 1) | static_cast<int>(jsonData[i + j]);
     }
-    strigifiedJson += static_cast<char>(asciiValue);
+    stringifiedJson += static_cast<char>(asciiValue);
   }
 
   try {
     json::parser parser;
-    json::object data = parser.loads(strigifiedJson);
+    json::object data = parser.loads(stringifiedJson);
     const std::string version = data["version"];
     if (version != yt::version) {
       logger::error("Invalid version detected. Expected: " + yt::version +

@@ -42,9 +42,9 @@ std::vector<bool> yt::Encrypter::getJsonData() {
   data["size"] =
       (long long int)(brewtils::os::file::size(this->options.inputFile) * 8);
   data["version"] = yt::version;
-  const std::string strigifiedData = data.dumps();
+  const std::string stringifiedJson = data.dumps();
   int asciiValue, i;
-  for (char ch : strigifiedData) {
+  for (char ch : stringifiedJson) {
     asciiValue = static_cast<int>(ch);
     for (i = 7; i >= 0; --i) {
       response.push_back((asciiValue >> i) & 1);
@@ -88,22 +88,23 @@ void yt::Encrypter::setFiledata() {
 }
 
 void yt::Encrypter::setData(bool data) {
-  if (this->row == 0 && this->col == 0) {
-    this->frame = cv::Mat::zeros(
-        cv::Size(this->options.width, this->options.height), CV_8UC1);
-  }
+  for (int i = 0; i < yt::REDUNDANCY; i++) {
+    if (this->row == 0 && this->col == 0) {
+      this->frame = cv::Mat::zeros(
+          cv::Size(this->options.width, this->options.height), CV_8UC1);
+    }
 
-  this->frame.at<uchar>(this->row, this->col) = data ? 255 : 0;
-  this->col++;
-  if (this->col == this->options.width) {
-    this->col = 0;
-    this->row++;
-  }
+    this->frame.at<uchar>(this->row, this->col) = data ? 255 : 0;
+    this->col++;
+    if (this->col == this->options.width) {
+      this->col = 0;
+      this->row++;
+    }
 
-  if (this->row == this->options.height) {
-    this->writer.write(this->frame);
-    this->row = 0;
+    if (this->row == this->options.height) {
+      this->writer.write(this->frame);
+      this->row = 0;
+    }
   }
-
   return;
 }

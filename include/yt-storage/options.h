@@ -10,6 +10,8 @@
 
 namespace yt {
 
+const int REDUNDANCY = 7;
+
 typedef struct {
   int width;
   int height;

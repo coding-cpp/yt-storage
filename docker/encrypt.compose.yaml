@@ -1,0 +1,22 @@
+name: yt-storage-encrypt
+
+networks:
+  intranet:
+    driver: bridge
+
+services:
+  yt-storage-encrypt:
+    image: jadit19/yt-storage:latest
+    container_name: yt-storage-encrypt
+    restart: 'no'
+    networks:
+      - intranet
+    volumes:
+      - ../files:/files
+    environment:
+      INPUT_FILE: 'important-video.mp4'
+      MODE: '0'
+      WIDTH: '1920'
+      HEIGHT: '1080'
+      FPS: '30'
+      OUTPUT_FILE: 'output.mp4'
