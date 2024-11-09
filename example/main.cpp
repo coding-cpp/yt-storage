@@ -5,20 +5,18 @@
 
 int main(int argc, char **argv) {
   yt::options options;
-  options.width = std::stoi(brewtils::env::get("WIDTH", "1920"));
-  options.height = std::stoi(brewtils::env::get("HEIGHT", "1080"));
-  options.fps = std::stoi(brewtils::env::get("FPS", "30"));
+  int mode = std::stoi(brewtils::env::get("MODE", "0"));
   options.inputFile = brewtils::env::get("INPUT_FILE");
-  options.outputFile = brewtils::env::get("OUTPUT_FILE", "output.mp4");
   if (options.inputFile.empty()) {
     logger::error("Input file not provided", "int main(int argc, char **argv)");
   }
-  options.inputFile = brewtils::os::joinPath("../files", options.inputFile);
-  options.outputFile = brewtils::os::joinPath("../files", options.outputFile);
 
-  int mode = std::stoi(brewtils::env::get("MODE", "0"));
   switch (mode) {
   case 0: {
+    options.width = std::stoi(brewtils::env::get("WIDTH", "1920"));
+    options.height = std::stoi(brewtils::env::get("HEIGHT", "1080"));
+    options.fps = std::stoi(brewtils::env::get("FPS", "30"));
+    options.outputFile = brewtils::env::get("OUTPUT_FILE", "output.mp4");
     yt::Encrypter encrypter;
     encrypter.encrypt(options);
     break;
