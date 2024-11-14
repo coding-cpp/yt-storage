@@ -7,3 +7,6 @@
 [submodule "lib/json"]
 	path = lib/json
 	url = git@github.com:coding-cpp/json
+[submodule "lib/zippuccino"]
+	path = lib/zippuccino
+	url = git@github.com:coding-cpp/zippuccino

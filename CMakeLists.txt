@@ -37,6 +37,8 @@ target_include_directories(${PROJECT_NAME}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/brewtils/include>
     $<INSTALL_INTERFACE:lib/json/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/json/include>
+    $<INSTALL_INTERFACE:lib/zippuccino/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/zippuccino/include>
 )
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
