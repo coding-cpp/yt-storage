@@ -13,14 +13,14 @@ void yt::Decrypter::decrypt(yt::options options) {
   this->options = options;
   this->options.width = -1;
   this->options.height = -1;
-  if (!brewtils::os::file::exists(this->options.inputFile)) {
-    logger::error("Input file " + this->options.inputFile + " does not exist",
+  if (!brewtils::os::file::exists(this->options.inputPath)) {
+    logger::error("Input file " + this->options.inputPath + " does not exist",
                   "void yt::Decrypter::decrypt(yt::options options)");
   }
 
-  this->cap.open(this->options.inputFile);
+  this->cap.open(this->options.inputPath);
   if (!this->cap.isOpened()) {
-    logger::error("Could not open file " + this->options.inputFile,
+    logger::error("Could not open file " + this->options.inputPath,
                   "void yt::Decrypter::decrypt(yt::options options)");
   }
 
@@ -96,8 +96,7 @@ void yt::Decrypter::readMetadata() {
                     "void yt::Decrypter::readMetadata()");
     }
 
-    this->options.outputFile =
-        "../files/" + static_cast<std::string>(data["name"]);
+    this->options.outputFile = static_cast<std::string>(data["name"]);
     this->fileSize = data["size"];
   } catch (const std::exception &e) {
     logger::error("Invalid metadata detected",
@@ -111,9 +110,11 @@ void yt::Decrypter::readMetadata() {
 }
 
 void yt::Decrypter::readFiledata() {
-  std::ofstream file(this->options.outputFile, std::ios::binary);
+  const std::string outputFile =
+      brewtils::os::joinPath(this->options.outputDir, this->options.outputFile);
+  std::ofstream file(outputFile, std::ios::binary);
   if (!file.is_open()) {
-    logger::error("Could not open file " + this->options.outputFile,
+    logger::error("Could not open file " + outputFile,
                   "void yt::Decrypter::readFiledata()");
   }
 

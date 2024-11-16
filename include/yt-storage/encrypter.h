@@ -1,5 +1,7 @@
 #pragma once
 
+#include <zippuccino/zipper.h>
+
 #include <yt-storage/options.h>
 
 namespace yt {
@@ -12,10 +14,13 @@ private:
 
   yt::options options;
 
-  std::vector<bool> getJsonData();
+  std::string getJsonData();
   void setMetadata();
-  void setFiledata();
+  void setFiledata(const std::string &filePath);
+  void setStringData(const std::string &data);
   void setData(bool data);
+
+  zippuccino::Zipper *zipper;
 
 public:
   Encrypter();
