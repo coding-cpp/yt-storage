@@ -16,8 +16,9 @@ typedef struct {
   int width;
   int height;
   int fps;
-  std::string inputFile;
+  std::string inputPath;
   std::string outputFile;
+  std::string outputDir;
 } options;
 
 } // namespace yt

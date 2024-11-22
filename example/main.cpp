@@ -6,8 +6,9 @@
 int main(int argc, char **argv) {
   yt::options options;
   int mode = std::stoi(brewtils::env::get("MODE", "0"));
-  options.inputFile = brewtils::env::get("INPUT_FILE");
-  if (options.inputFile.empty()) {
+  options.inputPath = brewtils::env::get("INPUT_PATH");
+  options.outputDir = brewtils::env::get("OUTPUT_DIR", "./");
+  if (options.inputPath.empty()) {
     logger::error("Input file not provided", "int main(int argc, char **argv)");
   }
 

@@ -14,5 +14,6 @@ services:
     volumes:
       - ../files:/files
     environment:
-      INPUT_FILE: 'output.mp4'
       MODE: '1'
+      INPUT_PATH: '/files/output.mp4'
+      OUTPUT_DIR: '/files'

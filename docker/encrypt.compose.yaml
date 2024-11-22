@@ -14,9 +14,10 @@ services:
     volumes:
       - ../files:/files
     environment:
-      INPUT_FILE: 'important-video.mp4'
       MODE: '0'
+      INPUT_PATH: '/files/important-video.mp4'
+      OUTPUT_DIR: '/files'
+      OUTPUT_FILE: 'output.mp4'
       WIDTH: '1920'
       HEIGHT: '1080'
       FPS: '30'
-      OUTPUT_FILE: 'output.mp4'

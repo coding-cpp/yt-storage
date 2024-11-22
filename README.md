@@ -70,7 +70,8 @@ make
 > [!IMPORTANT]
 > To run the example, you absolutely need to provide the following environment variables:
 >
-> - `INPUT_FILE`: The absolute or relative path to the file you want to convert into a video
+> - `INPUT_PATH`: The absolute or relative path to the file or folder you want to encrypt or decrypt
+> - `OUTPUT_DIR`: The absolute or relative path to the directory where you want to save the output video (defaults to `./`)
 > - `MODE`: `0` for encryption and `1` for decryption (defaults to `0`)
 
 Execute the program:
@@ -104,10 +105,10 @@ docker pull jadit19/yt-storage
 Make sure you've got the file you want to encrypt / decrypt in the [files](./files) directory. To run the container, execute:
 
 ```bash
-docker run -v $(pwd)/files:/files -e INPUT_FILE="<file_name>" -e MODE="<0/1>" jadit19/yt-storage
+docker run -v $(pwd)/files:/files -e INPUT_PATH="<file_name>" -e OUTPUT_DIR="/files" -e MODE="<0/1>" jadit19/yt-storage
 ```
 
-Remember that the `INPUT_FILE` environment variable should be the base name of the file you want to encrypt / decrypt, and the `MODE` environment variable should be `0` for encryption and `1` for decryption.
+Remember that the `INPUT_PATH` environment variable should be the absolute or relative path to the file or folder you want to encrypt / decrypt, the `OUTPUT_DIR` environment variable should be the absolute or relative path to the directory where you want to save the output video, and the `MODE` environment variable should be `0` for encryption and `1` for decryption.
 
 If you are like me and prefer using docker compose, you can use the [encrypt.compose.yaml](./docker/encrypt.compose.yaml) and [decrypt.compose.yaml](./docker/decrypt.compose.yaml) files to run the encryption and decryption processes respectively after specifying the required environment variables:
 
@@ -123,7 +124,7 @@ For testing purposes, I've provided a sample file that you can decrypt post down
 
 ## Internal working
 
-Apart from the actual 0s and 1s, I need to store some (meta)data in the encrypted video file that can be used to decrypt it. For now, I am saving 3 things, namely, the name of the output file (post decryption), the total size of the original file (in bits) and the version of yt-storage used to encrypt the file (backwards compatibility is not guaranteed).
+Apart from the actual 0s and 1s, I need to store some (meta)data in the encrypted video file that can be used to decrypt it. For now, I am saving 3 things, namely, the name of the output file (post decryption), the total size of the original or final zipped file (in bits) and the version of yt-storage used to encrypt the file (backwards compatibility is not guaranteed).
 
 I am saving this metadata as a json string in the first few bits of the video. Now, to properly read this metadata, I need to know how many bits to read. This is where the `metadata_size` comes in. It is the number of bits required to store the metadata, and occupies the first 16 bits of the first frame of the video.
 
@@ -133,9 +134,7 @@ After doing, I uploaded an encrypted file to YouTube and then download it in the
 
 ## Future works
 
-For added security, the read stream can be encoded using the OpenSSL library and require a key to decrypt. Moreover, encrypting entire folders (as a zip file) could be a potential.
-
-Also, this thing could do with some optimization, which are two ways I can think of right now:
+For added security, the read stream can be encoded using the OpenSSL library and require a key to decrypt. Also, this thing could do with some optimization, which are two ways I can think of right now:
 
 1. Black and white pixels are not the only way to represent bits. I could use the RGB channels to represent 3 bits per pixel, which would reduce the size of the video by a third.
 

@@ -3,6 +3,9 @@
 yt::Encrypter::Encrypter() : col(0), row(0) { return; }
 
 yt::Encrypter::~Encrypter() {
+  if (this->zipper != nullptr) {
+    delete this->zipper;
+  }
   if (this->writer.isOpened()) {
     this->writer.release();
   }
@@ -11,22 +14,31 @@ yt::Encrypter::~Encrypter() {
 
 void yt::Encrypter::encrypt(yt::options options) {
   this->options = options;
-  if (!brewtils::os::file::exists(this->options.inputFile)) {
-    logger::error("Input file " + this->options.inputFile + " does not exist",
+  if (!brewtils::os::file::exists(this->options.inputPath) &&
+      !brewtils::os::dir::exists(this->options.inputPath)) {
+    logger::error("Input path " + this->options.inputPath + " does not exist",
                   "void yt::Encrypter::encrypt(yt::options options)");
   }
 
-  this->writer.open(this->options.outputFile,
-                    cv::VideoWriter::fourcc('m', 'p', '4', 'v'),
-                    this->options.fps,
-                    cv::Size(this->options.width, this->options.height), false);
+  this->writer.open(
+      brewtils::os::joinPath(this->options.outputDir, this->options.outputFile),
+      cv::VideoWriter::fourcc('m', 'p', '4', 'v'), this->options.fps,
+      cv::Size(this->options.width, this->options.height), false);
   if (!this->writer.isOpened()) {
     logger::error("Could not open video writer",
                   "void yt::Encrypter::encrypt(yt::options options)");
   }
 
   this->setMetadata();
-  this->setFiledata();
+  if (this->zipper == nullptr) {
+    this->setFiledata(this->options.inputPath);
+  } else {
+    while (!this->zipper->isFinished()) {
+      this->setStringData(this->zipper->getHeader());
+      this->setFiledata(this->zipper->getCurrentFile());
+    }
+    this->setStringData(this->zipper->getFooter());
+  }
 
   if (this->row != 0 || this->col != 0) {
     this->writer.write(this->frame);
@@ -35,44 +47,44 @@ void yt::Encrypter::encrypt(yt::options options) {
   return;
 }
 
-std::vector<bool> yt::Encrypter::getJsonData() {
+std::string yt::Encrypter::getJsonData() {
   std::vector<bool> response;
   json::object data;
-  data["name"] = brewtils::os::basePath(this->options.inputFile);
-  data["size"] =
-      (long long int)(brewtils::os::file::size(this->options.inputFile) * 8);
-  data["version"] = yt::version;
-  const std::string stringifiedJson = data.dumps();
-  int asciiValue, i;
-  for (char ch : stringifiedJson) {
-    asciiValue = static_cast<int>(ch);
-    for (i = 7; i >= 0; --i) {
-      response.push_back((asciiValue >> i) & 1);
-    }
+  if (brewtils::os::file::exists(this->options.inputPath)) {
+    data["name"] = brewtils::os::basePath(this->options.inputPath);
+    data["size"] =
+        (long long int)(brewtils::os::file::size(this->options.inputPath) * 8);
+  } else if (brewtils::os::dir::exists(this->options.inputPath)) {
+    this->zipper = new zippuccino::Zipper();
+    zipper->add(this->options.inputPath);
+    data["name"] = brewtils::os::basePath(this->options.inputPath) + ".zip";
+    data["size"] = (long long int)(this->zipper->getSize() * 8);
+  } else {
+    logger::error("Input path " + this->options.inputPath +
+                      " is neither a file nor a directory",
+                  "std::vector<bool> yt::Encrypter::getJsonData()");
   }
-  return response;
+  data["version"] = yt::version;
+  return data.dumps();
 }
 
 void yt::Encrypter::setMetadata() {
-  const std::vector<bool> jsonData = yt::Encrypter::getJsonData();
-  uint16_t jsonDataSize = jsonData.size();
+  const std::string jsonData = yt::Encrypter::getJsonData();
+  uint16_t jsonDataSize = jsonData.size() * 8;
 
   for (int i = 0; i < 16; i++) {
     this->setData(jsonDataSize % 2 != 0);
     jsonDataSize /= 2;
   }
 
-  for (const bool &bit : jsonData) {
-    this->setData(bit);
-  }
-
+  this->setStringData(jsonData);
   return;
 }
 
-void yt::Encrypter::setFiledata() {
-  std::ifstream file(this->options.inputFile, std::ios::binary);
+void yt::Encrypter::setFiledata(const std::string &filePath) {
+  std::ifstream file(filePath, std::ios::binary);
   if (!file.is_open()) {
-    logger::error("Could not open file " + this->options.inputFile,
+    logger::error("Could not open file " + filePath,
                   "void yt::Encrypter::setFiledata()");
   }
 
@@ -84,6 +96,15 @@ void yt::Encrypter::setFiledata() {
   }
 
   file.close();
+  return;
+}
+
+void yt::Encrypter::setStringData(const std::string &data) {
+  for (char ch : data) {
+    for (int i = 7; i >= 0; --i) {
+      this->setData((ch >> i) & 1);
+    }
+  }
   return;
 }
 
